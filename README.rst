@@ -67,10 +67,10 @@ You can install the package using pip and the PyPi repository::
 Alternatively, you can clone it and run the setup.py file. Use the following
 commands to get a copy from Github and install::
 
-  git clone https://github.com/paris-saclay-cds/specio.git
+  git clone https://github.com/CharlieKC/specio.git
   cd specio
   pip install .
 
 You can also install the master branch directly with pip::
 
-  pip install git+https://github.com/paris-saclay-cds/specio.git
+  pip install git+https://github.com/CharlieKC/specio.git
