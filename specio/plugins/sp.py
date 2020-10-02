@@ -3,6 +3,7 @@
 # Copyright (c) 2017
 # Authors: Guillaume Lemaitre <guillaume.lemaitre@inria.fr>
 # License: BSD 3 clause
+# Updated by Charlie Kruczko to get more meta data from sp files
 
 from __future__ import absolute_import, print_function, division
 
@@ -69,7 +70,10 @@ def _decode_5104(data):
                 '<h', data[start_byte:start_byte + 2])[0]
             start_byte += 2
             try:
-                text.append(data[start_byte:start_byte + text_size].decode('utf8'))
+                # The ignore is needed for some fields, I think the mu symbol doesn't
+                # get encoded correctly, when giving units of distance
+                text.append(data[start_byte:start_byte + text_size].decode('utf8',
+                                                                           errors='ignore'))
             except:
                 text.append('ERROR READING FIELD')
             start_byte += text_size
@@ -87,7 +91,6 @@ def _decode_5104(data):
             start_byte += 2
         else:
             start_byte += 1
-
     return {'analyst': text[0],
             'date': text[2],
             'image_name': text[4],
@@ -132,8 +135,9 @@ def _decode_25739(data):
                                             start_byte + n_bytes])[0]
         start_byte += n_bytes
         n_bytes = var_size
-        return {'file_path': data[start_byte:
-                                  start_byte + n_bytes].decode('utf-8')}
+        file_path = {'file_path': data[start_byte:
+                                       start_byte + n_bytes].decode('utf-8')}
+        return file_path
 
 
 def _decode_35698(data):
@@ -191,6 +195,8 @@ def _decode_35699(data):
 def _decode_35700(data):
     """Read the block of data with ID 35700.
 
+    Wavelength step
+
     Parameters
     ----------
     data : bytes
@@ -216,6 +222,8 @@ def _decode_35700(data):
 def _decode_35701(data):
     """Read the block of data with ID 35701.
 
+    Number of points
+
     Parameters
     ----------
     data : bytes
@@ -240,6 +248,8 @@ def _decode_35701(data):
 
 def _decode_35708(data):
     """Read the block of data with ID 35708.
+
+    Decode the spectrum array
 
     Parameters
     ----------
@@ -267,12 +277,110 @@ def _decode_35708(data):
                              dtype=np.float64)
 
 
+def _decode_35709(data):
+    """Read the block of data with ID 35709.
+
+    Decode marker name
+
+    Parameters
+    ----------
+    data : bytes
+        The 35709 block to decode.
+
+    Returns
+    -------
+    meta : dict
+        The extracted information.
+
+    """
+    text = []
+    start_byte = 0
+    while start_byte + 2 < len(data):
+        tag = data[start_byte:start_byte + 2]
+        if tag == b'#u':
+            start_byte += 2
+            text_size = struct.unpack(
+                '<h', data[start_byte:start_byte + 2])[0]
+            text = data[start_byte + 2:start_byte + text_size].decode('utf8')
+        else:
+            start_byte += 1
+    return {'marker_name': text}
+
+
+def _decode_35714(data):
+    """Read the block of data with ID 35714
+
+    Decode additional meta information
+
+    Parameters
+    ----------
+    data : bytes
+        The 35714. block to decode.
+
+    Returns
+    -------
+    meta : dict
+        The extracted information.
+
+    """
+    text = []
+    start_byte = 0
+    while start_byte + 2 < len(data):
+        tag = data[start_byte:start_byte + 2]
+        if tag == b'#u':
+            start_byte += 2
+            text_size = struct.unpack(
+                '<h', data[start_byte:start_byte + 2])[0]
+            start_byte += 2
+            try:
+                text.append(data[start_byte:start_byte + text_size].decode('utf8',
+                                                                           errors='ignore'))
+            except:
+                text.append('ERROR READING FIELD')
+            start_byte += text_size
+            # start_byte += 6
+        elif tag == b'$u':
+            start_byte += 2
+            text.append(struct.unpack(
+                '<h', data[start_byte:start_byte + 2])[0])
+            start_byte += 2
+            start_byte += 6
+        elif tag == b',u':
+            start_byte += 2
+            text.append(struct.unpack(
+                '<h', data[start_byte:start_byte + 2])[0])
+            start_byte += 2
+        else:
+            start_byte += 1
+
+    additional_meta = {
+        "scan_range": text[1],
+        "accessory_type": text[3],
+        "aperture_width": text[5],
+        "aperture_height": text[7],
+        "aperture_rotation": text[9],
+        "sampling_mode": text[11],
+        "illumination": text[13],
+        "brightness": text[15],
+        "contrast": text[17],
+        "correction": text[19],
+        "stage_pos_x": text[21],
+        "stage_pos_y": text[23],
+        "stage_pos_z": text[25],
+        "microscope_type": text[27]}
+
+    return additional_meta
+
+
 FUNC_DECODE = {25739: _decode_25739,
                35698: _decode_35698,
                35699: _decode_35699,
                35700: _decode_35700,
                35701: _decode_35701,
-               35708: _decode_35708}
+               35708: _decode_35708,
+               35709: _decode_35709,
+               35714: _decode_35714,
+               }
 
 
 class SP(Format):
@@ -303,6 +411,7 @@ class SP(Format):
             if request.firstbytes[:4] == b'PEPE':
                 return True
         return False
+
     # -- reader
 
     class Reader(Format.Reader):
@@ -332,7 +441,7 @@ class SP(Format):
             # the description is fixed to 40 bytes
             n_bytes = 40
             description = content[
-                start_byte:start_byte + n_bytes].decode('utf8')
+                          start_byte:start_byte + n_bytes].decode('utf8').rstrip('\x00')
 
             meta = {'signature': signature,
                     'description': description}
@@ -357,7 +466,6 @@ class SP(Format):
                         content[start_byte:start_byte + n_bytes])
                     start_byte += n_bytes
                     NBP.append(start_byte + block_size)
-
             meta.update(_decode_5104(
                 content[start_byte:start_byte + block_size]))
 
