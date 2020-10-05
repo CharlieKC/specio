@@ -301,7 +301,7 @@ def _decode_35709(data):
             start_byte += 2
             text_size = struct.unpack(
                 '<h', data[start_byte:start_byte + 2])[0]
-            text = data[start_byte + 2:start_byte + text_size].decode('utf8')
+            text = data[start_byte + 2:].decode('utf8')
         else:
             start_byte += 1
     return {'marker_name': text}
