@@ -371,7 +371,7 @@ def _decode_35714(data):
             start_byte += 1
 
     additional_meta = {
-        "scan_range": text[1],
+        # "scan_range": text[1], # This doesn't seem to be useful
         "accessory_type": text[3],
         "aperture_width": int(text[5]),
         "aperture_height": int(text[7]),
@@ -505,10 +505,10 @@ class SP(Format):
                                      meta['max_wavelength'],
                                      meta['n_points'])
 
-            if isinstance(sp_file, string_types):
-                meta['filename'] = basename(sp_file)
-            else:
-                meta['filename'] = basename(sp_file.name)
+            # if isinstance(sp_file, string_types):
+            #     meta['filename'] = basename(sp_file)
+            # else:
+            #     meta['filename'] = basename(sp_file.name)
 
             return Spectrum(spectrum, wavelength, meta)
 
