@@ -312,6 +312,23 @@ def _decode_35714(data):
 
     Decode additional meta information
 
+    Example:
+
+     {'scan_range': '4000 450',
+     'accessory_type': 'Microscope',
+     'aperture_width': '25',
+     'aperture_height': '25',
+     'aperture_rotation': '0.00',
+     'sampling_mode': 'Transmittance',
+     'illumination': '10',
+     'brightness': '128',
+     'contrast': '32',
+     'correction': '0',
+     'stage_pos_x': '-29247',
+     'stage_pos_y': '-16657',
+     'stage_pos_z': '-8487',
+     'microscope_type': 'Spotlight 200'}
+
     Parameters
     ----------
     data : bytes
@@ -356,17 +373,17 @@ def _decode_35714(data):
     additional_meta = {
         "scan_range": text[1],
         "accessory_type": text[3],
-        "aperture_width": text[5],
-        "aperture_height": text[7],
-        "aperture_rotation": text[9],
+        "aperture_width": int(text[5]),
+        "aperture_height": int(text[7]),
+        "aperture_rotation": float(text[9]),
         "sampling_mode": text[11],
-        "illumination": text[13],
-        "brightness": text[15],
-        "contrast": text[17],
-        "correction": text[19],
-        "stage_pos_x": text[21],
-        "stage_pos_y": text[23],
-        "stage_pos_z": text[25],
+        "illumination": int(text[13]),
+        "brightness": int(text[15]),
+        "contrast": int(text[17]),
+        "correction": int(text[19]),
+        "stage_pos_x": float(text[21]),
+        "stage_pos_y": float(text[23]) * -1, # This is to match whats in spotlight xml
+        "stage_pos_z": float(text[25]),
         "microscope_type": text[27]}
 
     return additional_meta
