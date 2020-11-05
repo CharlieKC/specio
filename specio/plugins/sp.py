@@ -111,14 +111,6 @@ def _decode_5104(data):
             'igram_type': text[28],
             'scan_direction': text[29],
             'background_scans': text[32]}
-
-    # Do some formatting stuff
-    meta["date"] = format_date(meta["date"])
-    # Convert signature from bytes to string
-    meta["signature"] = str(meta["signature"])
-    # Strip \x00 from the description
-    meta["description"] = meta["description"].rstrip("\x00")
-
     return meta
 
 def format_date(s):
@@ -536,6 +528,13 @@ class SP(Format):
             #     meta['filename'] = basename(sp_file)
             # else:
             #     meta['filename'] = basename(sp_file.name)
+
+            # Do some formatting stuff of the metadata
+            meta["date"] = format_date(meta["date"])
+            # Convert signature from bytes to string
+            meta["signature"] = str(meta["signature"])
+            # Strip \x00 from the description
+            meta["description"] = meta["description"].rstrip("\x00")
 
             return Spectrum(spectrum, wavelength, meta)
 
