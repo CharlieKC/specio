@@ -8,10 +8,11 @@
 from __future__ import absolute_import, print_function, division
 
 import struct
-from os.path import basename
 
 import numpy as np
-from six import string_types, indexbytes
+from six import indexbytes
+
+from datetime import datetime
 
 from .. import formats
 from ..core import Format
@@ -91,7 +92,8 @@ def _decode_5104(data):
             start_byte += 2
         else:
             start_byte += 1
-    return {'analyst': text[0],
+
+    meta = {'analyst': text[0],
             'date': text[2],
             'image_name': text[4],
             'instrument_model': text[5],
@@ -110,6 +112,31 @@ def _decode_5104(data):
             'scan_direction': text[29],
             'background_scans': text[32]}
 
+    # Do some formatting stuff
+    meta["date"] = format_date(meta["date"])
+    # Convert signature from bytes to string
+    meta["signature"] = str(meta["signature"])
+    # Strip \x00 from the description
+    meta["description"] = meta["description"].rstrip("\x00")
+
+    return meta
+
+def format_date(s):
+    """Formats the date from reading the PerkinElmer .sp spectrum file to ISO.
+
+    Parameters
+    ----------
+    s
+        Date string: e.g. 'tue dec 03 09:57:03 2019 GMT Standard Time (GMT+0:00)'
+    Returns
+    -------
+        ISO date string: e.g. '2019-12-03T09:57:03'
+    """
+    # Take the first bit of the date: 'tue dec 03 09:57:03 2019', goodbye daylight
+    # savings
+    s = s[:24]
+    date = datetime.strptime(s, r"%a %b %d %H:%M:%S %Y")
+    return date.isoformat()
 
 def _decode_25739(data):
     """Read the block of data with ID 25739.
